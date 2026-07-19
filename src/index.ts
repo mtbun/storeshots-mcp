@@ -1,9 +1,16 @@
 #!/usr/bin/env node
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { ALL_TOOLS } from "./tools/definitions.js";
 
-const server = new McpServer({ name: "storeshots", version: "0.1.0" });
+const pkg = JSON.parse(
+  readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf8"),
+);
+
+const server = new McpServer({ name: "storeshots", version: pkg.version });
 
 for (const tool of ALL_TOOLS) {
   server.registerTool(
