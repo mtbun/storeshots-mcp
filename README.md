@@ -11,6 +11,7 @@ An MCP (Model Context Protocol) server that turns raw app screenshots into polis
 
 <p align="center">
   <a href="https://www.npmjs.com/package/storeshots-mcp"><img src="https://img.shields.io/npm/v/storeshots-mcp?color=cb3837&label=npm" alt="npm version" /></a>
+  <a href="https://github.com/mtbun/storeshots-mcp/actions/workflows/ci.yml"><img src="https://github.com/mtbun/storeshots-mcp/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
   <img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen" alt="node version" />
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license" />
   <img src="https://img.shields.io/badge/MCP-stdio-8A2BE2" alt="MCP stdio" />
