@@ -1,0 +1,57 @@
+{
+  "name": "storeshots-mcp",
+  "version": "0.1.0",
+  "description": "MCP server and CLI that render store-ready App Store and Google Play screenshots: device frames, benefit-driven headlines, exact store dimensions.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mtbun/storeshots-mcp.git"
+  },
+  "homepage": "https://github.com/mtbun/storeshots-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/mtbun/storeshots-mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "app-store",
+    "google-play",
+    "screenshots",
+    "aso",
+    "app-marketing",
+    "device-frame",
+    "claude",
+    "cursor"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "storeshots-mcp": "dist/index.js",
+    "storeshots": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "assets",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc && node -e \"['index.js','cli.js'].forEach(f=>require('fs').chmodSync('dist/'+f,0o755))\"",
+    "dev": "npm run build && node dist/index.js",
+    "test": "npm run build && vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "sharp": "^0.34.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

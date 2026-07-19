@@ -26,12 +26,16 @@ src/
     showcase.ts     Multi-screenshot preview strip
   tools/            One file per MCP tool, thin wrappers over render/
 skill/
-  SKILL.md          Claude Code skill: workflow layer only, no code
+  SKILL.md          Claude Code skill: workflow layer only, no code (planned)
 assets/
-  frames/           Device frame images (iPhone, Android, iPad, tablet)
   fonts/            Bundled OFL-licensed font files only
+  showcase.png      README hero image, regenerated via scripts/make-demo.mjs
 test/
+scripts/
+  make-demo.mjs     Generates mock app screens, demo set, and the showcase
 ```
+
+Device frames are drawn programmatically as SVG in `render/frame.ts` (body, bezel, dynamic island or punch hole); there are no binary frame assets. Text rendering uses the bundled font through a generated fontconfig file (`ensureFontconfig` in `util.ts`); without it, pango silently falls back to host fonts and output stops being deterministic.
 
 - **Runtime**: Node >= 18, ESM.
 - **MCP SDK**: `@modelcontextprotocol/sdk`, stdio transport only. Nothing client-specific: no Claude-only extensions, no assumptions about which agent is calling.

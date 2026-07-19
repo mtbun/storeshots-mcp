@@ -89,7 +89,7 @@ Then just ask:
   | `ipad-13` | App Store, iPad Pro 13" | 2064 × 2752 |
   | `android-tablet` | Google Play, 10" tablet | 1600 × 2560 |
 
-- **Device frames** for iPhone, Pixel-style Android, iPad, and Android tablet, bundled as assets
+- **Device frames** for iPhone (dynamic island), Pixel-style Android (punch hole), iPad, and Android tablet, drawn programmatically at exact scale
 - **Benefit-first headline layout**: a bold action verb plus a short descriptor, sized and positioned for store shelf impact
 - **Smart contrast**: text color flips between light and dark based on background luminance
 - **Full Unicode typography**: bundled OFL-licensed font renders İ, Ğ, Ş, Ü, ß, and accented characters correctly in all caps
