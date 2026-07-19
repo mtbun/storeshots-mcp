@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.mtbun/storeshots-mcp",
+  "description": "MCP server and CLI that render store-ready App Store and Google Play screenshots: device frames, benefit-driven headlines, exact store dimensions.",
+  "repository": {
+    "url": "https://github.com/mtbun/storeshots-mcp",
+    "source": "github"
+  },
+  "version": "0.1.1",
+  "websiteUrl": "https://github.com/mtbun/storeshots-mcp",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "storeshots-mcp",
+      "version": "0.1.1",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
