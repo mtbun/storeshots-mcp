@@ -18,7 +18,7 @@ export async function renderDevice(preset: Preset, screenshotPath: string): Prom
   const deviceW = Math.round(preset.width * preset.deviceWidthRatio);
   const bezel = Math.round(deviceW * device.bezelRatio);
   const screenW = deviceW - bezel * 2;
-  const screenH = Math.round(screenW * (preset.height / preset.width));
+  const screenH = Math.round(screenW * (preset.screenAspect ?? preset.height / preset.width));
   const deviceH = screenH + bezel * 2;
   const bodyRadius = Math.round(deviceW * device.bodyRadiusRatio);
   const screenRadius = Math.round(deviceW * device.screenRadiusRatio);

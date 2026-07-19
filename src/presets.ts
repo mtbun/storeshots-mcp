@@ -24,11 +24,24 @@ export interface Preset {
   label: string;
   width: number;
   height: number;
+  /**
+   * portrait: centered headline on top, device below (store screenshots).
+   * landscape: left-aligned headline vertically centered, device on the right
+   * (Play Store feature graphic).
+   */
+  layout: "portrait" | "landscape";
+  /**
+   * Screen height as a multiple of screen width. Defaults to height/width of
+   * the canvas; landscape presets must set it to a phone screen ratio.
+   */
+  screenAspect?: number;
   /** Device outer width as a ratio of canvas width. */
   deviceWidthRatio: number;
   /** Device top edge as a ratio of canvas height. */
   deviceTopRatio: number;
-  /** Headline block top as a ratio of canvas height. */
+  /** Device left edge as a ratio of canvas width (landscape only). */
+  deviceLeftRatio?: number;
+  /** Headline block top as a ratio of canvas height (portrait only). */
   textTopRatio: number;
   /** Max headline width as a ratio of canvas width. */
   textMaxWidthRatio: number;
@@ -65,6 +78,7 @@ export const PRESETS: Record<string, Preset> = {
     id: "ios-phone",
     store: "app-store",
     label: 'App Store, iPhone 6.9"',
+    layout: "portrait",
     width: 1320,
     height: 2868,
     deviceWidthRatio: 0.78,
@@ -79,6 +93,7 @@ export const PRESETS: Record<string, Preset> = {
     id: "android-phone",
     store: "google-play",
     label: "Google Play, phone",
+    layout: "portrait",
     width: 1080,
     height: 1920,
     deviceWidthRatio: 0.72,
@@ -93,6 +108,7 @@ export const PRESETS: Record<string, Preset> = {
     id: "ipad-13",
     store: "app-store",
     label: 'App Store, iPad Pro 13"',
+    layout: "portrait",
     width: 2064,
     height: 2752,
     deviceWidthRatio: 0.82,
@@ -107,6 +123,7 @@ export const PRESETS: Record<string, Preset> = {
     id: "android-tablet",
     store: "google-play",
     label: 'Google Play, 10" tablet',
+    layout: "portrait",
     width: 1600,
     height: 2560,
     deviceWidthRatio: 0.78,
@@ -116,6 +133,23 @@ export const PRESETS: Record<string, Preset> = {
     verbFontPx: 180,
     descFontPx: 96,
     device: TABLET_STYLE,
+  },
+  "play-feature-graphic": {
+    id: "play-feature-graphic",
+    store: "google-play",
+    label: "Google Play, feature graphic",
+    layout: "landscape",
+    width: 1024,
+    height: 500,
+    screenAspect: 1920 / 1080,
+    deviceWidthRatio: 0.3,
+    deviceTopRatio: 0.14,
+    deviceLeftRatio: 0.64,
+    textTopRatio: 0,
+    textMaxWidthRatio: 0.52,
+    verbFontPx: 88,
+    descFontPx: 44,
+    device: ANDROID_PHONE_STYLE,
   },
 };
 

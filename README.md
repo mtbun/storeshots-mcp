@@ -81,7 +81,7 @@ Then just ask:
 
 ## What you get
 
-- **4 platform presets** with exact store-required dimensions:
+- **5 presets** with exact store-required dimensions:
 
   | Preset | Store | Dimensions |
   |---|---|---|
@@ -89,6 +89,7 @@ Then just ask:
   | `android-phone` | Google Play, phone | 1080 × 1920 |
   | `ipad-13` | App Store, iPad Pro 13" | 2064 × 2752 |
   | `android-tablet` | Google Play, 10" tablet | 1600 × 2560 |
+  | `play-feature-graphic` | Google Play, feature graphic (landscape header) | 1024 × 500 |
 
 - **Device frames** for iPhone (dynamic island), Pixel-style Android (punch hole), iPad, and Android tablet, drawn programmatically at exact scale
 - **Benefit-first headline layout**: a bold action verb plus a short descriptor, sized and positioned for store shelf impact
@@ -123,6 +124,18 @@ output/
   de/android-phone/de_01.png … de_06.png
 ```
 
+## Claude Code skill (optional)
+
+The MCP tools work on their own, but the bundled skill adds a guided workflow: benefit discovery from your codebase, headline approval before rendering, per-language sets, and upload guidance. Install it with:
+
+```bash
+mkdir -p ~/.claude/skills/storeshots
+curl -o ~/.claude/skills/storeshots/SKILL.md \
+  https://raw.githubusercontent.com/mtbun/storeshots-mcp/main/skill/SKILL.md
+```
+
+Then ask Claude Code for "store screenshots for this app" and it walks the full flow.
+
 ## Design principles
 
 1. **Deterministic**: no AI image generation in the render path. Same input, same pixels, every time.
@@ -132,8 +145,8 @@ output/
 
 ## Roadmap
 
-- [ ] Claude Code skill layer: guided benefit-discovery workflow on top of the MCP tools
-- [ ] Play Store feature graphic preset (1024 × 500)
+- [x] Claude Code skill layer: guided benefit-discovery workflow on top of the MCP tools
+- [x] Play Store feature graphic preset (1024 × 500)
 - [ ] Layout variants: device-bottom, device-tilted, text-bottom
 - [ ] Custom device frame support
 - [ ] Panoramic sets (one background flowing across multiple screenshots)

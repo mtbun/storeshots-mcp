@@ -51,17 +51,35 @@ export async function composeScreenshot(opts: ComposeOptions): Promise<ComposeRe
 
   const device = await renderDevice(preset, opts.screenshot);
 
-  const textTop = Math.round(preset.height * preset.textTopRatio);
   const lineGap = Math.round(preset.descFontPx * 0.4);
-  const descTop = textTop + verbLine.height + lineGap;
   const deviceTop = Math.round(preset.height * preset.deviceTopRatio);
-  const textBottom = descTop + descLine.height;
-  if (deviceTop - textBottom < MIN_TEXT_DEVICE_GAP) {
-    warnings.push(
-      `Headline block ends ${deviceTop - textBottom}px above the device; ` +
-        `minimum is ${MIN_TEXT_DEVICE_GAP}px. Consider a shorter headline.`,
-    );
+
+  let verbLeft: number;
+  let descLeft: number;
+  let textTop: number;
+  let deviceLeft: number;
+  if (preset.layout === "landscape") {
+    // Feature graphic: left-aligned headline vertically centered, device right.
+    const marginX = Math.round(preset.width * 0.07);
+    const blockH = verbLine.height + lineGap + descLine.height;
+    textTop = Math.round((preset.height - blockH) / 2);
+    verbLeft = marginX;
+    descLeft = marginX;
+    deviceLeft = Math.round(preset.width * (preset.deviceLeftRatio ?? 0.64));
+  } else {
+    textTop = Math.round(preset.height * preset.textTopRatio);
+    verbLeft = Math.round((preset.width - verbLine.width) / 2);
+    descLeft = Math.round((preset.width - descLine.width) / 2);
+    deviceLeft = Math.round((preset.width - device.width) / 2);
+    const textBottom = textTop + verbLine.height + lineGap + descLine.height;
+    if (deviceTop - textBottom < MIN_TEXT_DEVICE_GAP) {
+      warnings.push(
+        `Headline block ends ${deviceTop - textBottom}px above the device; ` +
+          `minimum is ${MIN_TEXT_DEVICE_GAP}px. Consider a shorter headline.`,
+      );
+    }
   }
+  const descTop = textTop + verbLine.height + lineGap;
 
   const overlays: sharp.OverlayOptions[] = [];
   if (!opts.noGradient) {
@@ -76,10 +94,22 @@ export async function composeScreenshot(opts: ComposeOptions): Promise<ComposeRe
 </svg>`;
     overlays.push({ input: Buffer.from(gradientSvg), left: 0, top: 0 });
   }
+  // The device intentionally bleeds off the canvas edge; sharp rejects overlays
+  // larger than the base, so crop it to the visible region first.
+  let deviceBuffer = device.buffer;
+  const visibleW = Math.min(device.width, preset.width - deviceLeft);
+  const visibleH = Math.min(device.height, preset.height - deviceTop);
+  if (visibleW < device.width || visibleH < device.height) {
+    deviceBuffer = await sharp(device.buffer)
+      .extract({ left: 0, top: 0, width: visibleW, height: visibleH })
+      .png()
+      .toBuffer();
+  }
+
   overlays.push(
-    { input: verbLine.buffer, left: Math.round((preset.width - verbLine.width) / 2), top: textTop },
-    { input: descLine.buffer, left: Math.round((preset.width - descLine.width) / 2), top: descTop },
-    { input: device.buffer, left: Math.round((preset.width - device.width) / 2), top: deviceTop },
+    { input: verbLine.buffer, left: verbLeft, top: textTop },
+    { input: descLine.buffer, left: descLeft, top: descTop },
+    { input: deviceBuffer, left: deviceLeft, top: deviceTop },
   );
 
   const overwrote = existsSync(opts.output);
