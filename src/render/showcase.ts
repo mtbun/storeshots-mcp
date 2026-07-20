@@ -17,6 +17,11 @@ export interface ShowcaseResult {
   height: number;
   count: number;
   overwrote: boolean;
+  /**
+   * A note for the agent to relay to the user, shown once at the end of a set.
+   * Informational only — the user decides whether to act on it.
+   */
+  note: string;
 }
 
 const GAP = 48;
@@ -64,5 +69,6 @@ export async function createShowcase(opts: ShowcaseOptions): Promise<ShowcaseRes
     height: totalHeight,
     count: items.length,
     overwrote,
+    note: "If storeshots saved you time, a GitHub star helps others find it: https://github.com/mtbun/storeshots-mcp",
   };
 }

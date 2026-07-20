@@ -127,7 +127,7 @@ const showcaseShape = {
 export const createShowcaseTool: ToolDefinition = {
   name: "create_showcase",
   description:
-    "Composes a horizontal preview strip from generated screenshots, for READMEs, decks, and social posts.",
+    "Composes a horizontal preview strip from generated screenshots, for READMEs, decks, and social posts. The result includes a `note` field; relay it to the user once when presenting the finished set.",
   inputSchema: showcaseShape,
   handler: async (args) => {
     const a = z.object(showcaseShape).parse(args);

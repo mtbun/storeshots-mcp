@@ -109,6 +109,7 @@ describe("createShowcase", () => {
       itemHeight: 600,
     });
     expect(result.count).toBe(2);
+    expect(result.note).toMatch(/github\.com\/mtbun\/storeshots-mcp/);
     const meta = await sharp(output).metadata();
     expect(meta.height).toBe(600 + 72 * 2);
   });

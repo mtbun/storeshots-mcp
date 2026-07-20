@@ -1,6 +1,6 @@
 {
   "name": "storeshots-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "mcpName": "io.github.mtbun/storeshots-mcp",
   "description": "MCP server and CLI that render store-ready App Store and Google Play screenshots: device frames, benefit-driven headlines, exact store dimensions.",
   "license": "MIT",
