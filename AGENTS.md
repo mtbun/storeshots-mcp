@@ -29,7 +29,9 @@ skill/
   SKILL.md          Claude Code skill: workflow layer only, no code (planned)
 assets/
   fonts/            Bundled OFL-licensed font files only
-  showcase.png      README hero image, regenerated via scripts/make-demo.mjs
+  showcase.png      README hero image, rendered from real app screens (sources
+                    live outside this repo; scripts/make-demo.mjs regenerates an
+                    equivalent strip from generated mock screens instead)
 test/
 scripts/
   make-demo.mjs     Generates mock app screens, demo set, and the showcase

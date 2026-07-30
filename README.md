@@ -4,9 +4,13 @@
 
 An MCP (Model Context Protocol) server that turns raw app screenshots into polished, pixel-perfect store listing visuals: device frames, bold benefit-driven headlines, brand colors, and exact store dimensions for iOS and Android. Your agent writes the copy, storeshots renders the pixels.
 
-<!-- hero showcase image: assets/showcase.png -->
 <p align="center">
-  <img src="assets/showcase.png" alt="Showcase of generated App Store and Google Play screenshots" width="100%" />
+  <img src="assets/showcase.png" alt="App Store and Google Play screenshots generated with storeshots-mcp" width="100%" />
+</p>
+
+<p align="center">
+  <sub>Generated from real screens of two shipped apps: <a href="https://apps.apple.com/app/id6774954831">bombo</a> (panels 1–3) and <a href="https://apps.apple.com/app/id6756270620">Studio Zero</a> (panel 4).<br />
+  Panel 3 is the Android preset with Turkish headlines, uppercased with locale-correct <code>İ</code> and <code>Ğ</code>.</sub>
 </p>
 
 <p align="center">
