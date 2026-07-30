@@ -97,6 +97,7 @@ Then just ask:
 
 - **Device frames** for iPhone (dynamic island), Pixel-style Android (punch hole), iPad, and Android tablet, drawn programmatically at exact scale
 - **Benefit-first headline layout**: a bold action verb plus a short descriptor, sized and positioned for store shelf impact
+- **Layout variants**: `text-top`, `text-bottom`, and `tilted` — mix them across a set so your screenshots don't all look like the same template
 - **Smart contrast**: text color flips between light and dark based on background luminance
 - **Full Unicode typography**: bundled OFL-licensed font renders İ, Ğ, Ş, Ü, ß, and accented characters correctly in all caps
 - **Showcase composer**: one wide preview image of the whole set, ready for your repo, tweet, or client deck
@@ -151,7 +152,7 @@ Then ask Claude Code for "store screenshots for this app" and it walks the full 
 
 - [x] Claude Code skill layer: guided benefit-discovery workflow on top of the MCP tools
 - [x] Play Store feature graphic preset (1024 × 500)
-- [ ] Layout variants: device-bottom, device-tilted, text-bottom
+- [x] Layout variants: text-top, text-bottom, tilted (mix them across a set)
 - [ ] Custom device frame support
 - [ ] Panoramic sets (one background flowing across multiple screenshots)
 

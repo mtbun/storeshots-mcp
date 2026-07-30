@@ -27,6 +27,12 @@ const langField = z
   .string()
   .default("en")
   .describe('BCP-47 language code for locale-aware uppercasing, e.g. "en", "tr", "de"');
+const variantField = z
+  .enum(["text-top", "text-bottom", "tilted"])
+  .default("text-top")
+  .describe(
+    "Composition variant (portrait presets only): text-top = headline above a device that bleeds off the bottom; text-bottom = whole device visible with the headline underneath; tilted = text-top with the device rotated. Vary it across a set so the screenshots do not all look identical.",
+  );
 
 export const listPresets: ToolDefinition = {
   name: "list_presets",
@@ -54,6 +60,7 @@ const composeShape = {
   screenshot: z.string().describe("Path to the raw app screenshot (PNG or JPEG)"),
   output: z.string().describe("Path for the composed PNG output"),
   lang: langField,
+  variant: variantField,
   noGradient: z.boolean().default(false).describe("Disable the subtle background gradient"),
 };
 
@@ -81,11 +88,16 @@ const setShape = {
         verb: z.string(),
         descriptor: z.string(),
         screenshot: z.string().describe("Path to the raw app screenshot for this item"),
+        variant: z
+          .enum(["text-top", "text-bottom", "tilted"])
+          .optional()
+          .describe("Per-item composition variant; falls back to the set-level variant"),
       }),
     )
     .min(1)
     .max(10)
     .describe("Ordered list of screenshots to render"),
+  variant: variantField,
   noGradient: z.boolean().default(false),
 };
 
@@ -109,6 +121,7 @@ export const generateSet: ToolDefinition = {
           screenshot: item.screenshot,
           output: `${a.outputDir}/${a.lang}_${nn}.png`,
           lang: a.lang,
+          variant: item.variant ?? a.variant,
           noGradient: a.noGradient,
         }),
       );

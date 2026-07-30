@@ -6,6 +6,20 @@ import { normalizeHex, textColorFor, toUpper } from "../util.js";
 import { renderDevice } from "./frame.js";
 import { renderLine } from "./text.js";
 
+/**
+ * Composition variants for portrait presets. Mixing them across a set keeps
+ * the store listing from looking like six copies of one template.
+ * - text-top: headline on top, device below, bottom edge bleeding off canvas.
+ * - text-bottom: whole device visible up top, headline underneath.
+ * - tilted: like text-top, with the device rotated for a dynamic feel.
+ */
+export type LayoutVariant = "text-top" | "text-bottom" | "tilted";
+
+export const LAYOUT_VARIANTS: LayoutVariant[] = ["text-top", "text-bottom", "tilted"];
+
+/** Rotation applied by the tilted variant, in degrees. */
+const TILT_DEGREES = -6;
+
 export interface ComposeOptions {
   preset: string;
   background: string;
@@ -17,6 +31,8 @@ export interface ComposeOptions {
   lang?: string;
   /** Disables the subtle vertical gradient overlay. */
   noGradient?: boolean;
+  /** Composition variant; portrait presets only. Default "text-top". */
+  variant?: LayoutVariant;
 }
 
 export interface ComposeResult {
@@ -26,6 +42,7 @@ export interface ComposeResult {
   preset: string;
   headline: string;
   textColor: string;
+  variant: LayoutVariant;
   overwrote: boolean;
   warnings: string[];
 }
@@ -50,9 +67,19 @@ export async function composeScreenshot(opts: ComposeOptions): Promise<ComposeRe
   const descLine = await renderLine(descriptor, preset.descFontPx, color, maxTextWidth);
 
   const device = await renderDevice(preset, opts.screenshot);
+  let deviceBuffer = device.buffer;
+  let deviceW = device.width;
+  let deviceH = device.height;
 
   const lineGap = Math.round(preset.descFontPx * 0.4);
-  const deviceTop = Math.round(preset.height * preset.deviceTopRatio);
+  const blockHeight = verbLine.height + lineGap + descLine.height;
+  let variant: LayoutVariant = opts.variant ?? "text-top";
+  if (preset.layout === "landscape" && variant !== "text-top") {
+    warnings.push(`Preset "${preset.id}" has a fixed landscape layout; variant "${variant}" was ignored.`);
+    variant = "text-top";
+  }
+
+  let deviceTop = Math.round(preset.height * preset.deviceTopRatio);
 
   let verbLeft: number;
   let descLeft: number;
@@ -61,17 +88,41 @@ export async function composeScreenshot(opts: ComposeOptions): Promise<ComposeRe
   if (preset.layout === "landscape") {
     // Feature graphic: left-aligned headline vertically centered, device right.
     const marginX = Math.round(preset.width * 0.07);
-    const blockH = verbLine.height + lineGap + descLine.height;
-    textTop = Math.round((preset.height - blockH) / 2);
+    textTop = Math.round((preset.height - blockHeight) / 2);
     verbLeft = marginX;
     descLeft = marginX;
     deviceLeft = Math.round(preset.width * (preset.deviceLeftRatio ?? 0.64));
+  } else if (variant === "text-bottom") {
+    // Whole device visible up top, headline underneath. The device is scaled
+    // down when it would otherwise run into the text block.
+    deviceTop = Math.round(preset.height * 0.03);
+    const bottomMargin = Math.round(preset.height * 0.05);
+    textTop = preset.height - bottomMargin - blockHeight;
+    const available = textTop - MIN_TEXT_DEVICE_GAP - deviceTop;
+    if (deviceH > available) {
+      const scaled = Math.round(deviceW * (available / deviceH));
+      deviceBuffer = await sharp(deviceBuffer).resize(scaled, available).png().toBuffer();
+      deviceW = scaled;
+      deviceH = available;
+    }
+    verbLeft = Math.round((preset.width - verbLine.width) / 2);
+    descLeft = Math.round((preset.width - descLine.width) / 2);
+    deviceLeft = Math.round((preset.width - deviceW) / 2);
   } else {
+    if (variant === "tilted") {
+      deviceBuffer = await sharp(deviceBuffer)
+        .rotate(TILT_DEGREES, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        .png()
+        .toBuffer();
+      const meta = await sharp(deviceBuffer).metadata();
+      deviceW = meta.width ?? deviceW;
+      deviceH = meta.height ?? deviceH;
+    }
     textTop = Math.round(preset.height * preset.textTopRatio);
     verbLeft = Math.round((preset.width - verbLine.width) / 2);
     descLeft = Math.round((preset.width - descLine.width) / 2);
-    deviceLeft = Math.round((preset.width - device.width) / 2);
-    const textBottom = textTop + verbLine.height + lineGap + descLine.height;
+    deviceLeft = Math.round((preset.width - deviceW) / 2);
+    const textBottom = textTop + blockHeight;
     if (deviceTop - textBottom < MIN_TEXT_DEVICE_GAP) {
       warnings.push(
         `Headline block ends ${deviceTop - textBottom}px above the device; ` +
@@ -96,11 +147,10 @@ export async function composeScreenshot(opts: ComposeOptions): Promise<ComposeRe
   }
   // The device intentionally bleeds off the canvas edge; sharp rejects overlays
   // larger than the base, so crop it to the visible region first.
-  let deviceBuffer = device.buffer;
-  const visibleW = Math.min(device.width, preset.width - deviceLeft);
-  const visibleH = Math.min(device.height, preset.height - deviceTop);
-  if (visibleW < device.width || visibleH < device.height) {
-    deviceBuffer = await sharp(device.buffer)
+  const visibleW = Math.min(deviceW, preset.width - deviceLeft);
+  const visibleH = Math.min(deviceH, preset.height - deviceTop);
+  if (visibleW < deviceW || visibleH < deviceH) {
+    deviceBuffer = await sharp(deviceBuffer)
       .extract({ left: 0, top: 0, width: visibleW, height: visibleH })
       .png()
       .toBuffer();
@@ -135,6 +185,7 @@ export async function composeScreenshot(opts: ComposeOptions): Promise<ComposeRe
     preset: preset.id,
     headline: `${verb} ${descriptor}`,
     textColor: color,
+    variant,
     overwrote,
     warnings,
   };

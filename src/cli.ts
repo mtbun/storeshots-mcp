@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { parseArgs } from "node:util";
 import { PRESETS } from "./presets.js";
-import { composeScreenshot } from "./render/compose.js";
+import { LAYOUT_VARIANTS, type LayoutVariant, composeScreenshot } from "./render/compose.js";
 import { createShowcase } from "./render/showcase.js";
 import { validateScreenshot } from "./render/validate.js";
 
@@ -17,6 +17,7 @@ Commands:
     --screenshot <path>         Raw app screenshot
     --output <path>             Output PNG path
     [--lang <code>]             Language for uppercasing (default en)
+    [--variant <name>]          text-top (default) | text-bottom | tilted
     [--no-gradient]             Disable background gradient
   showcase                      Compose a preview strip
     --output <path>             Output PNG path
@@ -60,9 +61,13 @@ try {
           screenshot: { type: "string" },
           output: { type: "string" },
           lang: { type: "string", default: "en" },
+          variant: { type: "string", default: "text-top" },
           "no-gradient": { type: "boolean", default: false },
         },
       });
+      if (!LAYOUT_VARIANTS.includes(values.variant as LayoutVariant)) {
+        fail(`Unknown variant "${values.variant}". Valid variants: ${LAYOUT_VARIANTS.join(", ")}`);
+      }
       const result = await composeScreenshot({
         preset: required(values, "preset"),
         background: required(values, "bg"),
@@ -71,6 +76,7 @@ try {
         screenshot: required(values, "screenshot"),
         output: required(values, "output"),
         lang: values.lang,
+        variant: values.variant as LayoutVariant,
         noGradient: values["no-gradient"],
       });
       console.log(JSON.stringify(result, null, 2));

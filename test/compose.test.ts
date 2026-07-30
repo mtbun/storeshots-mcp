@@ -54,6 +54,53 @@ describe("composeScreenshot", () => {
     expect(result.textColor).toBe("#ffffff");
   });
 
+  it.each(["text-top", "text-bottom", "tilted"] as const)(
+    "renders the %s variant at exact dimensions",
+    async (variant) => {
+      const output = path.join(dir, `variant-${variant}.png`);
+      const result = await composeScreenshot({
+        preset: "ios-phone",
+        background: "#5B5BD6",
+        verb: "plan",
+        descriptor: "your best week",
+        screenshot: raw,
+        output,
+        variant,
+      });
+      expect(result.variant).toBe(variant);
+      const meta = await sharp(output).metadata();
+      expect(meta.width).toBe(1320);
+      expect(meta.height).toBe(2868);
+      expect(meta.hasAlpha).toBe(false);
+    },
+    30000,
+  );
+
+  it("produces visually different output per variant", async () => {
+    const [a, b, c] = await Promise.all(
+      (["text-top", "text-bottom", "tilted"] as const).map((v) =>
+        sharp(path.join(dir, `variant-${v}.png`)).raw().toBuffer(),
+      ),
+    );
+    expect(a.equals(b)).toBe(false);
+    expect(a.equals(c)).toBe(false);
+    expect(b.equals(c)).toBe(false);
+  });
+
+  it("ignores variants on the landscape feature graphic and says so", async () => {
+    const result = await composeScreenshot({
+      preset: "play-feature-graphic",
+      background: "#5B5BD6",
+      verb: "plan",
+      descriptor: "your best week",
+      screenshot: raw,
+      output: path.join(dir, "feature-tilted.png"),
+      variant: "tilted",
+    });
+    expect(result.variant).toBe("text-top");
+    expect(result.warnings.join(" ")).toMatch(/fixed landscape layout/);
+  });
+
   it("rejects unreadable screenshots with an actionable error", async () => {
     await expect(
       composeScreenshot({
