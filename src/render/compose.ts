@@ -3,7 +3,7 @@ import path from "node:path";
 import sharp from "sharp";
 import { getPreset } from "../presets.js";
 import { normalizeHex, textColorFor, toUpper } from "../util.js";
-import { renderDevice } from "./frame.js";
+import { type CustomFrame, renderCustomDevice, renderDevice } from "./frame.js";
 import { renderLine } from "./text.js";
 
 /**
@@ -33,6 +33,14 @@ export interface ComposeOptions {
   noGradient?: boolean;
   /** Composition variant; portrait presets only. Default "text-top". */
   variant?: LayoutVariant;
+  /**
+   * Background image (path or buffer) used instead of the solid `background`
+   * fill — e.g. one panel of a panoramic set. `background` is still used to
+   * pick the text color, so pass the representative hex of this panel.
+   */
+  backgroundImage?: string | Buffer;
+  /** Custom device frame; overrides the built-in programmatic frame. */
+  frame?: CustomFrame;
 }
 
 export interface ComposeResult {
@@ -66,7 +74,9 @@ export async function composeScreenshot(opts: ComposeOptions): Promise<ComposeRe
   const verbLine = await renderLine(verb, preset.verbFontPx, color, maxTextWidth);
   const descLine = await renderLine(descriptor, preset.descFontPx, color, maxTextWidth);
 
-  const device = await renderDevice(preset, opts.screenshot);
+  const device = opts.frame
+    ? await renderCustomDevice(preset, opts.screenshot, opts.frame)
+    : await renderDevice(preset, opts.screenshot);
   let deviceBuffer = device.buffer;
   let deviceW = device.width;
   let deviceH = device.height;
@@ -165,14 +175,15 @@ export async function composeScreenshot(opts: ComposeOptions): Promise<ComposeRe
   const overwrote = existsSync(opts.output);
   mkdirSync(path.dirname(path.resolve(opts.output)), { recursive: true });
 
+  // Base is either the solid brand color or a supplied image (e.g. a panorama
+  // panel), resized to fill the canvas exactly.
+  const base = opts.backgroundImage
+    ? sharp(opts.backgroundImage).resize(preset.width, preset.height, { fit: "cover" })
+    : sharp({ create: { width: preset.width, height: preset.height, channels: 4, background: bg } });
+
   // Two passes: sharp applies composite at the end of its pipeline, so alpha
   // removal must happen in a second pass. Stores reject alpha channels.
-  const composed = await sharp({
-    create: { width: preset.width, height: preset.height, channels: 4, background: bg },
-  })
-    .composite(overlays)
-    .png()
-    .toBuffer();
+  const composed = await base.composite(overlays).png().toBuffer();
   await sharp(composed).removeAlpha().png().toFile(opts.output);
 
   if (overwrote) {

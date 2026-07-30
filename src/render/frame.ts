@@ -8,6 +8,80 @@ export interface FramedDevice {
 }
 
 /**
+ * A user-supplied device frame: a transparent PNG whose screen area is a
+ * rectangle in the frame image's own pixel space. The screenshot is placed
+ * into that rectangle and the frame is drawn on top, so bezels, notches, and
+ * rounded corners come from the frame art rather than the built-in renderer.
+ */
+export interface CustomFrame {
+  image: string;
+  screenX: number;
+  screenY: number;
+  screenWidth: number;
+  screenHeight: number;
+}
+
+/**
+ * Composites a screenshot into a custom frame PNG, then scales the result so
+ * its width matches the preset's device width (aspect ratio preserved).
+ */
+export async function renderCustomDevice(
+  preset: Preset,
+  screenshotPath: string,
+  frame: CustomFrame,
+): Promise<FramedDevice> {
+  let frameMeta: sharp.Metadata;
+  try {
+    frameMeta = await sharp(frame.image).metadata();
+  } catch (err) {
+    throw new Error(
+      `Could not read frame image "${frame.image}": ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  const frameW = frameMeta.width ?? 0;
+  const frameH = frameMeta.height ?? 0;
+  if (
+    frame.screenX < 0 ||
+    frame.screenY < 0 ||
+    frame.screenX + frame.screenWidth > frameW ||
+    frame.screenY + frame.screenHeight > frameH
+  ) {
+    throw new Error(
+      `Screen rectangle (${frame.screenX},${frame.screenY} ${frame.screenWidth}x${frame.screenHeight}) ` +
+        `falls outside the ${frameW}x${frameH} frame image.`,
+    );
+  }
+
+  let screenshot: Buffer;
+  try {
+    screenshot = await sharp(screenshotPath)
+      .resize(frame.screenWidth, frame.screenHeight, { fit: "cover", position: "top" })
+      .png()
+      .toBuffer();
+  } catch (err) {
+    throw new Error(
+      `Could not read screenshot "${screenshotPath}": ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // Screenshot first (into the screen rect), frame art on top.
+  const composited = await sharp({
+    create: { width: frameW, height: frameH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+  })
+    .composite([
+      { input: screenshot, left: frame.screenX, top: frame.screenY },
+      { input: frame.image },
+    ])
+    .png()
+    .toBuffer();
+
+  const targetW = Math.round(preset.width * preset.deviceWidthRatio);
+  const targetH = Math.round(targetW * (frameH / frameW));
+  const buffer = await sharp(composited).resize(targetW, targetH).png().toBuffer();
+  return { buffer, width: targetW, height: targetH };
+}
+
+/**
  * Renders the device (body, screen content, camera cutout) as one image.
  * Frames are drawn programmatically as SVG, no binary frame assets.
  * The screen aspect ratio equals the preset canvas aspect ratio, because

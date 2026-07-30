@@ -6,13 +6,13 @@
     "url": "https://github.com/mtbun/storeshots-mcp",
     "source": "github"
   },
-  "version": "0.3.0",
+  "version": "0.4.0",
   "websiteUrl": "https://github.com/mtbun/storeshots-mcp",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "storeshots-mcp",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"

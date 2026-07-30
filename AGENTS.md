@@ -20,10 +20,12 @@ src/
   cli.ts            CLI entry: same core, argv interface
   presets.ts        Platform presets (dimensions, layout metrics, safe areas)
   render/
-    compose.ts      Single-screenshot composition pipeline
-    frame.ts        Device frame loading and screenshot masking
+    compose.ts      Single-screenshot composition pipeline + layout variants
+    frame.ts        Built-in programmatic frames + renderCustomDevice (BYO frame)
+    panorama.ts     Continuous gradient sliced across a set
     text.ts         Headline layout, sizing, luminance-based color
     showcase.ts     Multi-screenshot preview strip
+    validate.ts     Store dimension/format checks
   tools/            One file per MCP tool, thin wrappers over render/
 skill/
   SKILL.md          Claude Code skill: workflow layer only, no code (planned)

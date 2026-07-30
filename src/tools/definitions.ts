@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { PRESETS } from "../presets.js";
+import { PRESETS, getPreset } from "../presets.js";
 import { composeScreenshot } from "../render/compose.js";
+import { panoramaSlices } from "../render/panorama.js";
 import { createShowcase } from "../render/showcase.js";
 import { validateScreenshot } from "../render/validate.js";
 
@@ -33,6 +34,18 @@ const variantField = z
   .describe(
     "Composition variant (portrait presets only): text-top = headline above a device that bleeds off the bottom; text-bottom = whole device visible with the headline underneath; tilted = text-top with the device rotated. Vary it across a set so the screenshots do not all look identical.",
   );
+const frameField = z
+  .object({
+    image: z.string().describe("Path to a transparent PNG device frame"),
+    screenX: z.number().int().describe("Left of the screen rectangle in the frame image, px"),
+    screenY: z.number().int().describe("Top of the screen rectangle in the frame image, px"),
+    screenWidth: z.number().int().positive().describe("Screen rectangle width in the frame image, px"),
+    screenHeight: z.number().int().positive().describe("Screen rectangle height in the frame image, px"),
+  })
+  .optional()
+  .describe(
+    "Custom device frame. Supply your own frame PNG and the pixel rectangle where the screenshot goes; overrides the built-in frame. Omit to use the built-in frame.",
+  );
 
 export const listPresets: ToolDefinition = {
   name: "list_presets",
@@ -61,6 +74,7 @@ const composeShape = {
   output: z.string().describe("Path for the composed PNG output"),
   lang: langField,
   variant: variantField,
+  frame: frameField,
   noGradient: z.boolean().default(false).describe("Disable the subtle background gradient"),
 };
 
@@ -98,6 +112,15 @@ const setShape = {
     .max(10)
     .describe("Ordered list of screenshots to render"),
   variant: variantField,
+  frame: frameField,
+  panorama: z
+    .object({
+      to: backgroundField.describe("End color of the panoramic gradient (6-digit hex)"),
+    })
+    .optional()
+    .describe(
+      "Turn the set into one continuous background: a horizontal gradient from `background` to `panorama.to` flows across all panels, so they line up as a single image in the store. Omit for solid per-panel backgrounds.",
+    ),
   noGradient: z.boolean().default(false),
 };
 
@@ -108,6 +131,11 @@ export const generateSet: ToolDefinition = {
   inputSchema: setShape,
   handler: async (args) => {
     const a = z.object(setShape).parse(args);
+    const preset = getPreset(a.preset);
+    // Panorama: pre-render one gradient sliced across every panel.
+    const slices = a.panorama
+      ? await panoramaSlices(a.background, a.panorama.to, a.items.length, preset.width, preset.height)
+      : null;
     const results = [];
     for (let i = 0; i < a.items.length; i++) {
       const item = a.items[i];
@@ -122,11 +150,13 @@ export const generateSet: ToolDefinition = {
           output: `${a.outputDir}/${a.lang}_${nn}.png`,
           lang: a.lang,
           variant: item.variant ?? a.variant,
+          frame: a.frame,
+          backgroundImage: slices ? slices[i] : undefined,
           noGradient: a.noGradient,
         }),
       );
     }
-    return { preset: a.preset, lang: a.lang, count: results.length, results };
+    return { preset: a.preset, lang: a.lang, count: results.length, panorama: Boolean(a.panorama), results };
   },
 };
 

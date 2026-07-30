@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 import { parseArgs } from "node:util";
 import { PRESETS } from "./presets.js";
-import { LAYOUT_VARIANTS, type LayoutVariant, composeScreenshot } from "./render/compose.js";
+import {
+  type ComposeOptions,
+  LAYOUT_VARIANTS,
+  type LayoutVariant,
+  composeScreenshot,
+} from "./render/compose.js";
 import { createShowcase } from "./render/showcase.js";
 import { validateScreenshot } from "./render/validate.js";
 
@@ -18,6 +23,8 @@ Commands:
     --output <path>             Output PNG path
     [--lang <code>]             Language for uppercasing (default en)
     [--variant <name>]          text-top (default) | text-bottom | tilted
+    [--frame <path>]            Custom device frame PNG (overrides built-in)
+    [--frame-screen <x,y,w,h>]  Screen rectangle in the frame, px (with --frame)
     [--no-gradient]             Disable background gradient
   showcase                      Compose a preview strip
     --output <path>             Output PNG path
@@ -62,11 +69,27 @@ try {
           output: { type: "string" },
           lang: { type: "string", default: "en" },
           variant: { type: "string", default: "text-top" },
+          frame: { type: "string" },
+          "frame-screen": { type: "string" },
           "no-gradient": { type: "boolean", default: false },
         },
       });
       if (!LAYOUT_VARIANTS.includes(values.variant as LayoutVariant)) {
         fail(`Unknown variant "${values.variant}". Valid variants: ${LAYOUT_VARIANTS.join(", ")}`);
+      }
+      let frame: ComposeOptions["frame"];
+      if (values.frame) {
+        const parts = (values["frame-screen"] ?? "").split(",").map((n) => Number(n.trim()));
+        if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n))) {
+          fail('--frame requires --frame-screen "x,y,width,height" with four numbers');
+        }
+        frame = {
+          image: values.frame,
+          screenX: parts[0],
+          screenY: parts[1],
+          screenWidth: parts[2],
+          screenHeight: parts[3],
+        };
       }
       const result = await composeScreenshot({
         preset: required(values, "preset"),
@@ -77,6 +100,7 @@ try {
         output: required(values, "output"),
         lang: values.lang,
         variant: values.variant as LayoutVariant,
+        frame,
         noGradient: values["no-gradient"],
       });
       console.log(JSON.stringify(result, null, 2));

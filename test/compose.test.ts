@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { beforeAll, describe, expect, it } from "vitest";
 import { PRESETS } from "../src/presets.js";
 import { composeScreenshot } from "../src/render/compose.js";
+import { panoramaSlices } from "../src/render/panorama.js";
 import { createShowcase } from "../src/render/showcase.js";
 import { validateScreenshot } from "../src/render/validate.js";
 import { fakeScreenshot, tempDir } from "./helpers.js";
@@ -99,6 +100,72 @@ describe("composeScreenshot", () => {
     });
     expect(result.variant).toBe("text-top");
     expect(result.warnings.join(" ")).toMatch(/fixed landscape layout/);
+  });
+
+  it("shows the screenshot through a custom frame's transparent screen", async () => {
+    // Charcoal body with a REAL transparent screen window, punched via dest-out.
+    const frameImg = path.join(dir, "frame.png");
+    const body = await sharp(
+      Buffer.from(
+        `<svg width="600" height="1200" xmlns="http://www.w3.org/2000/svg"><rect width="600" height="1200" rx="80" fill="#111111"/></svg>`,
+      ),
+    )
+      .png()
+      .toBuffer();
+    const holeMask = Buffer.from(
+      `<svg width="600" height="1200" xmlns="http://www.w3.org/2000/svg"><rect x="40" y="40" width="520" height="1120" rx="48" fill="#fff"/></svg>`,
+    );
+    await sharp(body).composite([{ input: holeMask, blend: "dest-out" }]).png().toFile(frameImg);
+
+    const output = path.join(dir, "custom-frame.png");
+    const result = await composeScreenshot({
+      preset: "ios-phone",
+      background: "#5B5BD6",
+      verb: "custom",
+      descriptor: "framed device",
+      screenshot: raw, // fakeScreenshot is #2b6cb0 with a light top band
+      output,
+      frame: { image: frameImg, screenX: 40, screenY: 40, screenWidth: 520, screenHeight: 1120 },
+    });
+    expect(result.width).toBe(1320);
+    expect(result.height).toBe(2868);
+    const meta = await sharp(output).metadata();
+    expect(meta.hasAlpha).toBe(false);
+
+    // The screen center must show the screenshot's blue, not the frame's charcoal.
+    const center = await sharp(output)
+      .extract({ left: 660, top: 1600, width: 1, height: 1 })
+      .raw()
+      .toBuffer();
+    expect(center[2]).toBeGreaterThan(center[0]); // blue channel dominant
+  });
+
+  it("rejects a frame whose screen rectangle falls outside the image", async () => {
+    const frameImg = path.join(dir, "small-frame.png");
+    await sharp({ create: { width: 200, height: 400, channels: 4, background: "#111" } })
+      .png()
+      .toFile(frameImg);
+    await expect(
+      composeScreenshot({
+        preset: "ios-phone",
+        background: "#5B5BD6",
+        verb: "bad",
+        descriptor: "frame rect",
+        screenshot: raw,
+        output: path.join(dir, "bad-frame.png"),
+        frame: { image: frameImg, screenX: 0, screenY: 0, screenWidth: 999, screenHeight: 999 },
+      }),
+    ).rejects.toThrowError(/outside the 200x400 frame/);
+  });
+
+  it("panorama slices tile back into one continuous gradient", async () => {
+    const slices = await panoramaSlices("#000000", "#FFFFFF", 3, 100, 20);
+    expect(slices).toHaveLength(3);
+    // Left edge of slice 0 is near-black; right edge of slice 2 is near-white.
+    const first = await sharp(slices[0]).extract({ left: 0, top: 10, width: 1, height: 1 }).raw().toBuffer();
+    const last = await sharp(slices[2]).extract({ left: 99, top: 10, width: 1, height: 1 }).raw().toBuffer();
+    expect(first[0]).toBeLessThan(40);
+    expect(last[0]).toBeGreaterThan(215);
   });
 
   it("rejects unreadable screenshots with an actionable error", async () => {
