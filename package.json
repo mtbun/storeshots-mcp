@@ -1,8 +1,8 @@
 {
   "name": "storeshots-mcp",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "mcpName": "io.github.mtbun/storeshots-mcp",
-  "description": "MCP server and CLI that render store-ready App Store and Google Play screenshots: device frames, benefit-driven headlines, exact store dimensions.",
+  "description": "CLI and MCP server that render store-ready App Store and Google Play screenshots from one config: device frames, benefit-driven headlines, exact store dimensions, incremental builds.",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -14,6 +14,7 @@
     "url": "https://github.com/mtbun/storeshots-mcp/issues"
   },
   "keywords": [
+    "cli",
     "mcp",
     "model-context-protocol",
     "app-store",
@@ -37,6 +38,7 @@
     "dist",
     "assets",
     "README.md",
+    "llms.txt",
     "LICENSE"
   ],
   "scripts": {

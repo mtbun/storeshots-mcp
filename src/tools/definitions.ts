@@ -1,9 +1,14 @@
+import path from "node:path";
 import { z } from "zod";
-import { PRESETS, getPreset } from "../presets.js";
+import { PRESETS } from "../presets.js";
+import { buildPlan } from "../project/build.js";
+import { loadPlan } from "../project/config.js";
 import { composeScreenshot } from "../render/compose.js";
-import { panoramaSlices } from "../render/panorama.js";
+import { generateSet as renderSet } from "../render/set.js";
 import { createShowcase } from "../render/showcase.js";
 import { validateScreenshot } from "../render/validate.js";
+import { STAR_OFFER, markStarOffered, shouldOfferStar } from "../star.js";
+import { backgroundField, frameField, langField, presetField, variantEnum, variantField } from "../schemas.js";
 
 /**
  * MCP tool definitions. Tools are thin: validate input, call render/, return
@@ -17,35 +22,6 @@ export interface ToolDefinition {
   inputSchema: z.ZodRawShape;
   handler: (args: Record<string, unknown>) => Promise<unknown>;
 }
-
-const presetIds = Object.keys(PRESETS) as [string, ...string[]];
-
-const presetField = z.enum(presetIds).describe("Platform preset id");
-const backgroundField = z
-  .string()
-  .describe('Brand background color as 6-digit hex, e.g. "#E31837"');
-const langField = z
-  .string()
-  .default("en")
-  .describe('BCP-47 language code for locale-aware uppercasing, e.g. "en", "tr", "de"');
-const variantField = z
-  .enum(["text-top", "text-bottom", "tilted"])
-  .default("text-top")
-  .describe(
-    "Composition variant (portrait presets only): text-top = headline above a device that bleeds off the bottom; text-bottom = whole device visible with the headline underneath; tilted = text-top with the device rotated. Vary it across a set so the screenshots do not all look identical.",
-  );
-const frameField = z
-  .object({
-    image: z.string().describe("Path to a transparent PNG device frame"),
-    screenX: z.number().int().describe("Left of the screen rectangle in the frame image, px"),
-    screenY: z.number().int().describe("Top of the screen rectangle in the frame image, px"),
-    screenWidth: z.number().int().positive().describe("Screen rectangle width in the frame image, px"),
-    screenHeight: z.number().int().positive().describe("Screen rectangle height in the frame image, px"),
-  })
-  .optional()
-  .describe(
-    "Custom device frame. Supply your own frame PNG and the pixel rectangle where the screenshot goes; overrides the built-in frame. Omit to use the built-in frame.",
-  );
 
 export const listPresets: ToolDefinition = {
   name: "list_presets",
@@ -102,8 +78,7 @@ const setShape = {
         verb: z.string(),
         descriptor: z.string(),
         screenshot: z.string().describe("Path to the raw app screenshot for this item"),
-        variant: z
-          .enum(["text-top", "text-bottom", "tilted"])
+        variant: variantEnum
           .optional()
           .describe("Per-item composition variant; falls back to the set-level variant"),
       }),
@@ -129,35 +104,7 @@ export const generateSet: ToolDefinition = {
   description:
     "Batch-renders an ordered screenshot set for one preset and language. Item N becomes {lang}_{NN}.png. Returns per-item results plus any warnings.",
   inputSchema: setShape,
-  handler: async (args) => {
-    const a = z.object(setShape).parse(args);
-    const preset = getPreset(a.preset);
-    // Panorama: pre-render one gradient sliced across every panel.
-    const slices = a.panorama
-      ? await panoramaSlices(a.background, a.panorama.to, a.items.length, preset.width, preset.height)
-      : null;
-    const results = [];
-    for (let i = 0; i < a.items.length; i++) {
-      const item = a.items[i];
-      const nn = String(i + 1).padStart(2, "0");
-      results.push(
-        await composeScreenshot({
-          preset: a.preset,
-          background: a.background,
-          verb: item.verb,
-          descriptor: item.descriptor,
-          screenshot: item.screenshot,
-          output: `${a.outputDir}/${a.lang}_${nn}.png`,
-          lang: a.lang,
-          variant: item.variant ?? a.variant,
-          frame: a.frame,
-          backgroundImage: slices ? slices[i] : undefined,
-          noGradient: a.noGradient,
-        }),
-      );
-    }
-    return { preset: a.preset, lang: a.lang, count: results.length, panorama: Boolean(a.panorama), results };
-  },
+  handler: async (args) => renderSet(z.object(setShape).parse(args)),
 };
 
 const showcaseShape = {
@@ -194,10 +141,34 @@ export const validateScreenshotTool: ToolDefinition = {
   },
 };
 
+const buildShape = {
+  config: z.string().describe("Path to the project config, usually storeshots.json"),
+  langs: z.array(z.string()).optional().describe("Only build these languages"),
+  presets: z.array(z.string()).optional().describe("Only build these presets"),
+  force: z.boolean().default(false).describe("Re-render everything, ignoring the cache"),
+  dryRun: z.boolean().default(false).describe("Report what would be rendered without writing"),
+};
+
+export const buildProjectTool: ToolDefinition = {
+  name: "build_project",
+  description:
+    'Renders a whole store listing from a storeshots.json config: every screen x preset x language, plus an optional feature graphic and showcase strips. Re-renders only outputs whose inputs changed and removes outputs of deleted screens. Config shape: {"background":"#hex","presets":["ios-phone","android-phone"],"languages":["en","tr"],"outputDir":"output","screens":[{"screenshot":"shots/home.png","copy":{"en":["Track","your daily mood"],"tr":["Takip et","ruh halini"]},"variant":"tilted"}],"panorama":{"to":"#hex"},"featureGraphic":{"screen":1},"showcase":true}. Screenshot paths are relative to the config and may use {lang}, {preset}, {platform} (ios|android). Prefer this over generate_set when the user will iterate on a set. If the result includes a `star` field, follow its instructions: ask the user its yes/no question once, and star only on an explicit yes.',
+  inputSchema: buildShape,
+  handler: async (args) => {
+    const a = z.object(buildShape).parse(args);
+    const plan = loadPlan(path.resolve(a.config), { langs: a.langs, presets: a.presets });
+    const result = await buildPlan(plan, { force: a.force, dryRun: a.dryRun });
+    if (result.dryRun || result.rendered === 0 || !shouldOfferStar()) return result;
+    markStarOffered();
+    return { ...result, star: STAR_OFFER };
+  },
+};
+
 export const ALL_TOOLS: ToolDefinition[] = [
   listPresets,
   composeScreenshotTool,
   generateSet,
   createShowcaseTool,
   validateScreenshotTool,
+  buildProjectTool,
 ];

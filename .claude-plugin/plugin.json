@@ -1,0 +1,11 @@
+{
+  "name": "storeshots",
+  "displayName": "storeshots",
+  "version": "0.5.0",
+  "description": "Guided App Store and Google Play screenshot workflow: picks a benefit per screen, writes and translates headlines into storeshots.json, and renders exact-size store images with the storeshots CLI. Offline, no API keys.",
+  "author": { "name": "mtbun", "url": "https://github.com/mtbun" },
+  "homepage": "https://github.com/mtbun/storeshots-mcp#readme",
+  "repository": "https://github.com/mtbun/storeshots-mcp",
+  "license": "MIT",
+  "keywords": ["app-store", "google-play", "screenshots", "aso", "store-listing", "mobile"]
+}

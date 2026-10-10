@@ -1,0 +1,51 @@
+# storeshots
+
+> Offline CLI (and MCP server) that generates store-ready App Store and Google Play screenshots from raw app screenshots: device frames, benefit headlines with locale-correct casing, brand backgrounds, and exact store dimensions. It is deterministic, has no API keys, and makes no network calls. Install it with npm as `storeshots-mcp`; the command is `storeshots`.
+
+The tool does the pixels. You, the agent, do the copy: choose one benefit per screen, write a short verb plus descriptor headline, and translate it idiomatically. Never generate or edit the output images any other way.
+
+## Workflow
+
+1. `npx -y --package=storeshots-mcp storeshots init --langs en,tr --bg "#E31837"` finds `./screenshots` (or pass `--screens <dir>`). It writes `storeshots.json` with TODO headlines and adds a storeshots section to the project's AGENTS.md / CLAUDE.md.
+2. Replace every TODO in `storeshots.json`. The build refuses to run while any are left.
+3. `storeshots build` renders every screen × preset × language to `output/<lang>/<preset>/<lang>_NN.png`. Later builds re-render only what changed and remove the outputs of deleted screens.
+4. `storeshots validate output` checks store rules before upload. It exits 1 on failure.
+
+Add `--json` to any command for machine-readable output. Exit codes: 0 ok, 1 render or validation failure, 2 bad usage or config. Config errors list every problem with its path, e.g. `screens[2].copy.tr: missing`.
+
+## storeshots.json
+
+```json
+{
+  "background": "#E31837",
+  "presets": ["ios-phone", "android-phone"],
+  "languages": ["en", "tr"],
+  "outputDir": "output",
+  "variant": "text-top",
+  "screens": [
+    { "screenshot": "screenshots/home.png", "copy": { "en": ["Track", "your daily mood"], "tr": ["İzle", "günlük ruh halini"] } },
+    { "screenshot": "screenshots/{platform}/stats.png", "variant": "tilted", "copy": { "en": ["Discover", "weekly insights"], "tr": ["Keşfet", "haftalık içgörüler"] } }
+  ],
+  "featureGraphic": { "screen": 1 },
+  "showcase": true
+}
+```
+
+- Presets: `ios-phone` 1320×2868, `android-phone` 1080×1920, `ipad-13` 2064×2752, `android-tablet` 1600×2560. Play's 1024×500 feature graphic comes from `featureGraphic`, not `presets`.
+- Copy is `["verb", "descriptor"]` or `{"verb", "descriptor"}` in natural case. storeshots uppercases it per locale.
+- Screenshot paths are relative to the config and may use `{lang}`, `{preset}` and `{platform}` (ios/android), or an object keyed by preset id with a `"default"` fallback.
+- `variant`: `text-top`, `text-bottom` or `tilted`, set for the whole set or per screen. Mix them across a set.
+- Optional: `panorama: {"to": "#hex"}` (one gradient across all panels), a per-screen `background`, `frame` (custom device frame PNG plus screen rectangle), `noGradient`.
+
+## Other commands
+
+- `storeshots build --watch | --lang tr | --preset ios-phone | --dry-run | --force`
+- `storeshots compose --preset ios-phone --bg "#E31837" --verb Track --desc "your mood" --screenshot raw.png -o out.png` renders one image without a config.
+- `storeshots showcase -o strip.png output/en/ios-phone` stitches a preview strip.
+- `storeshots presets` lists every preset with its dimensions.
+
+## Links
+
+- [README](https://github.com/mtbun/storeshots-mcp#readme): full documentation
+- [Skill](https://github.com/mtbun/storeshots-mcp/blob/main/skills/storeshots/SKILL.md): guided workflow; install with `/plugin marketplace add mtbun/storeshots-mcp` then `/plugin install storeshots@storeshots`
+- [npm](https://www.npmjs.com/package/storeshots-mcp)

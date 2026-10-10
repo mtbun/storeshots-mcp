@@ -1,10 +1,12 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** Package root (one level above dist/). */
-const PKG_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+export const PKG_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+export const PKG_VERSION: string = JSON.parse(readFileSync(path.join(PKG_ROOT, "package.json"), "utf8")).version;
 
 export const FONT_DIR = path.join(PKG_ROOT, "assets", "fonts");
 export const FONT_FILE = path.join(FONT_DIR, "ArchivoBlack-Regular.ttf");

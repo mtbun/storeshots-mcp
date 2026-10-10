@@ -1,0 +1,13 @@
+{
+  "name": "storeshots",
+  "owner": { "name": "mtbun", "url": "https://github.com/mtbun" },
+  "description": "App Store and Google Play screenshot generation for coding agents.",
+  "plugins": [
+    {
+      "name": "storeshots",
+      "source": "./",
+      "description": "Guided store screenshot workflow on top of the storeshots CLI: benefits, headlines, translations, exact-size renders.",
+      "category": "productivity"
+    }
+  ]
+}

@@ -24,6 +24,10 @@ export interface ShowcaseResult {
   note: string;
 }
 
+/** Shown to the user once, after a first finished set. They decide whether to act on it. */
+export const STAR_NOTE =
+  "If storeshots saved you time, a GitHub star helps others find it: https://github.com/mtbun/storeshots-mcp";
+
 const GAP = 48;
 const PADDING = 72;
 
@@ -69,6 +73,6 @@ export async function createShowcase(opts: ShowcaseOptions): Promise<ShowcaseRes
     height: totalHeight,
     count: items.length,
     overwrote,
-    note: "If storeshots saved you time, a GitHub star helps others find it: https://github.com/mtbun/storeshots-mcp",
+    note: STAR_NOTE,
   };
 }
