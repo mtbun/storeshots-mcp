@@ -1,150 +1,17 @@
 #!/usr/bin/env node
-import { parseArgs } from "node:util";
-import { PRESETS } from "./presets.js";
-import {
-  type ComposeOptions,
-  LAYOUT_VARIANTS,
-  type LayoutVariant,
-  composeScreenshot,
-} from "./render/compose.js";
-import { createShowcase } from "./render/showcase.js";
-import { validateScreenshot } from "./render/validate.js";
+import { createInterface } from "node:readline/promises";
+import { runCli } from "./cli/run.js";
 
-const USAGE = `storeshots <command>
+const interactive = Boolean(process.stdin.isTTY && process.stdout.isTTY);
+const color = Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
 
-Commands:
-  presets                       List platform presets and dimensions
-  compose                       Render one marketing screenshot
-    --preset <id>               ios-phone | android-phone | ipad-13 | android-tablet
-    --bg <hex>                  Background color, e.g. "#E31837"
-    --verb <text>               Headline action word
-    --desc <text>               Headline descriptor
-    --screenshot <path>         Raw app screenshot
-    --output <path>             Output PNG path
-    [--lang <code>]             Language for uppercasing (default en)
-    [--variant <name>]          text-top (default) | text-bottom | tilted
-    [--frame <path>]            Custom device frame PNG (overrides built-in)
-    [--frame-screen <x,y,w,h>]  Screen rectangle in the frame, px (with --frame)
-    [--no-gradient]             Disable background gradient
-  showcase                      Compose a preview strip
-    --output <path>             Output PNG path
-    [--height <px>]             Item height (default 1200)
-    <inputs...>                 Generated screenshots in order
-  validate                      Check an image against store requirements
-    [--preset <id>]             Validate against a specific preset
-    <file>
-
-Runs fully offline. The MCP server variant is \`storeshots-mcp\`.`;
-
-function fail(message: string): never {
-  console.error(message);
-  process.exit(1);
-}
-
-function required(values: Record<string, unknown>, key: string): string {
-  const v = values[key];
-  if (typeof v !== "string" || v.length === 0) fail(`Missing required option --${key}\n\n${USAGE}`);
-  return v;
-}
-
-const [command, ...rest] = process.argv.slice(2);
-
-try {
-  switch (command) {
-    case "presets": {
-      for (const p of Object.values(PRESETS)) {
-        console.log(`${p.id.padEnd(16)} ${String(p.width).padStart(4)}x${p.height}  ${p.label}`);
-      }
-      break;
-    }
-    case "compose": {
-      const { values } = parseArgs({
-        args: rest,
-        options: {
-          preset: { type: "string" },
-          bg: { type: "string" },
-          verb: { type: "string" },
-          desc: { type: "string" },
-          screenshot: { type: "string" },
-          output: { type: "string" },
-          lang: { type: "string", default: "en" },
-          variant: { type: "string", default: "text-top" },
-          frame: { type: "string" },
-          "frame-screen": { type: "string" },
-          "no-gradient": { type: "boolean", default: false },
-        },
-      });
-      if (!LAYOUT_VARIANTS.includes(values.variant as LayoutVariant)) {
-        fail(`Unknown variant "${values.variant}". Valid variants: ${LAYOUT_VARIANTS.join(", ")}`);
-      }
-      let frame: ComposeOptions["frame"];
-      if (values.frame) {
-        const parts = (values["frame-screen"] ?? "").split(",").map((n) => Number(n.trim()));
-        if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n))) {
-          fail('--frame requires --frame-screen "x,y,width,height" with four numbers');
-        }
-        frame = {
-          image: values.frame,
-          screenX: parts[0],
-          screenY: parts[1],
-          screenWidth: parts[2],
-          screenHeight: parts[3],
-        };
-      }
-      const result = await composeScreenshot({
-        preset: required(values, "preset"),
-        background: required(values, "bg"),
-        verb: required(values, "verb"),
-        descriptor: required(values, "desc"),
-        screenshot: required(values, "screenshot"),
-        output: required(values, "output"),
-        lang: values.lang,
-        variant: values.variant as LayoutVariant,
-        frame,
-        noGradient: values["no-gradient"],
-      });
-      console.log(JSON.stringify(result, null, 2));
-      break;
-    }
-    case "showcase": {
-      const { values, positionals } = parseArgs({
-        args: rest,
-        options: {
-          output: { type: "string" },
-          height: { type: "string" },
-          bg: { type: "string" },
-        },
-        allowPositionals: true,
-      });
-      const result = await createShowcase({
-        inputs: positionals,
-        output: required(values, "output"),
-        itemHeight: values.height ? Number(values.height) : undefined,
-        background: values.bg,
-      });
-      console.log(JSON.stringify(result, null, 2));
-      break;
-    }
-    case "validate": {
-      const { values, positionals } = parseArgs({
-        args: rest,
-        options: { preset: { type: "string" } },
-        allowPositionals: true,
-      });
-      if (positionals.length !== 1) fail(`validate expects exactly one file\n\n${USAGE}`);
-      const result = await validateScreenshot(positionals[0], values.preset);
-      console.log(JSON.stringify(result, null, 2));
-      process.exit(result.valid ? 0 : 1);
-      break;
-    }
-    case undefined:
-    case "help":
-    case "--help":
-      console.log(USAGE);
-      break;
-    default:
-      fail(`Unknown command "${command}"\n\n${USAGE}`);
+async function prompt(question: string): Promise<string> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    return await rl.question(question);
+  } finally {
+    rl.close();
   }
-} catch (err) {
-  fail(`Error: ${err instanceof Error ? err.message : String(err)}`);
 }
+
+process.exitCode = await runCli(process.argv.slice(2), { color, prompt: interactive ? prompt : undefined });
