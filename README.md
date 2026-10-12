@@ -18,6 +18,7 @@ storeshots turns raw app screenshots into finished store-listing visuals — dev
   <img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen" alt="node version" />
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license" />
   <img src="https://img.shields.io/badge/MCP-stdio-8A2BE2" alt="MCP stdio" />
+  <a href="https://glama.ai/mcp/servers/mtbun/storeshots-mcp"><img src="https://glama.ai/mcp/servers/mtbun/storeshots-mcp/badges/score.svg" alt="storeshots-mcp MCP server score on Glama" /></a>
 </p>
 
 ---
